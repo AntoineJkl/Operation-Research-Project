@@ -19,6 +19,7 @@ class Noeud:
     def __init__(self,description,position,state):
         self.description=description
         self.position=position #list pour définir la position donnant les directions qu'il faut emprunter du début de l'arbre jusqu'à la fin
+        #ou sinon position en largeur et en longueur permet de diminuer considérablement la recherche je pense !!
         self.state=state
     
 if __name__ == "__main__":
