@@ -6,24 +6,39 @@ class ArbreEnumeration:
     
     def __init__(self,d1,p1):
             self.nombre_noeuds=1
-            self.tree=[Noeud("Problème Initial",[0],"No")]
-            self.dual_bounds=[d1]
-            self.primal_bounds=[p1]
+            self.nombre_noeuds_non_traites = 1
+            self.noeuds = [Noeud("Problème initiale",False)]
+            self.indice_noeuds_non_traites= [0]
+            self.dual_bounds=d1
+            self.primal_bounds=p1
     
-    def ajouterBranchement(self,descript1,descript2,pos):
+    def breadth_first_method(self,descript1,descript2,indice,position):
         self.nombre_noeuds+=2
-        self.tree= self.tree+[Noeud(descript1,pos+[1],"No"),Noeud(descript2,pos+[2],"No")]
+        self.nombre_noeuds_non_traites+=2 #a voir si 1 ou 2
+        self.noeuds += [Noeud(descript1,position,indice),Noeud(descript2,position,indice)]
+        self.indice_noeuds_non_traites += [self.nombre_noeuds-2,self.nombre_noeuds-1]
+        
+    def depth_first_method(self,descript1,descript2,indice,position):
+        self.nombre_noeuds+=2
+        self.nombre_noeuds_non_traites+=2 #a voir si 1 ou 2
+        self.noeuds += [Noeud(descript1,position,indice),Noeud(descript2,position,indice)]
+        self.indice_noeuds_non_traites = [self.nombre_noeuds-2,self.nombre_noeuds-1] + self.indice_noeuds_non_traites
+        
+    def best_first_method(self,descript1,descript2,indice,position):
+        
+        return 0 ##on peut utiliser ici tas min binaire pour aller plus vite
 
 class Noeud:
     
-    def __init__(self,description,position,state):
+    def __init__(self,description,pos,indice=-1):
         self.description=description
-        self.position=position #list pour définir la position donnant les directions qu'il faut emprunter du début de l'arbre jusqu'à la fin
-        #ou sinon position en largeur et en longueur permet de diminuer considérablement la recherche je pense !!
-        self.state=state
+        self.position = pos #branche : 0 ou une feuille : 1
+        self.indice_pere = indice #-1 si noeud racine
     
 if __name__ == "__main__":
     a = ArbreEnumeration(1000,0)
-    print(a.tree[0].position)
-    a.ajouterBranchement("1","2",[0])
-    print(a.tree[2].position)
+    
+def branch_and_bound(instance):
+    arbre=ArbreEnumeration()
+    
+
