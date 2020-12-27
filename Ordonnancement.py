@@ -25,7 +25,7 @@ class Ordonnancement:
     def problemeAleatoire(self,n = 10):
         self.nb_piece = n
         self.unite_temps = [random.randint(1,20) for i in range(n)]
-        self.deadlines = [random.randint(1,100) for i in range(n)]
+        self.deadlines = [random.randint(1,40) for i in range(n)]
         self.penalites = [random.randint(1,10) for i in range(n)]
         
         
@@ -69,7 +69,7 @@ class Ordonnancement:
             print(modele)
             for v in modele.variables():
                 print(v.name,"=",v.varValue)
-        print("\nSOLUTION OBTENUE:\n")
+        print("\nSOLUTION OBTENUE PLNE:\n")
         print("Total des pénalités:",pulp.value(modele.objective))
         Ordre = []
         k = self.nb_piece - 1
@@ -79,20 +79,6 @@ class Ordonnancement:
                     Ordre.append(i)
             k -= 1
         print("Ordre d'usinage des pièces:",Ordre)
-        for i in J:
-            pieces_suivantes = []
-            for j in J:
-                if(pulp.value(x[i][j]) == 1):
-                    pieces_suivantes.append(j)
-            if(len(pieces_suivantes)>1):
-                pieces = str(pieces_suivantes[0])
-                for p in pieces_suivantes[1:]: pieces += ", "+str(p)
-                print("La piece n°",i,"passe avant les pieces",pieces)
-            elif(len(pieces_suivantes) == 1):
-                print("La piece n°",i,"passe avant la piece",pieces_suivantes[0])
-            else:
-                print("La piece n°",i,"passe en dernière")
-
 
 
 
