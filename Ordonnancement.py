@@ -25,7 +25,7 @@ class Ordonnancement:
     def problemeAleatoire(self,n = 10):
         self.nb_piece = n
         self.unite_temps = [random.randint(1,20) for i in range(n)]
-        self.deadlines = [random.randint(1,40) for i in range(n)]
+        self.deadlines = [random.randint(20,40) for i in range(n)]
         self.penalites = [random.randint(1,10) for i in range(n)]
         
         
