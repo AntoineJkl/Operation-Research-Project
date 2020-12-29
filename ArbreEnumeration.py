@@ -4,6 +4,7 @@
 
 import Ordonnancement as order
 import time
+from heapq import *
 
 class ArbreEnumeration:
     
@@ -39,9 +40,15 @@ class Exploration:
         arbre.noeuds += list_nodes
         arbre.indice_noeuds_non_traites = [i for i in range(arbre.nombre_noeuds-n,arbre.nombre_noeuds)] + arbre.indice_noeuds_non_traites
         
-    def best_first_method(descript1,descript2,indice,position):
+    def best_first_method(arbre,list_nodes,borne_duale,instance):
+        n=len(list_nodes)
+        arbre.nombre_noeuds+=n
+        arbre.nombre_noeuds_non_traites+=n
+        arbre.noeuds += list_nodes
+        for i in range(arbre.nombre_noeuds-n,arbre.nombre_noeuds):
+            zD, isOptimal, solution  = borne_duale(arbre.noeuds[i],instance)
+            heappush(arbre.indice_noeuds_non_traites,(zD,isOptimal,solution,i))
         
-        return 0 ##on peut utiliser ici tas min binaire pour aller plus vite
 
 #Algorithme générique du branch-and-bound:
 def branch_and_bound(instance,primale,borne_duale,Branchement,explo):
@@ -54,12 +61,23 @@ def branch_and_bound(instance,primale,borne_duale,Branchement,explo):
     k = 1
     while(arbre.indice_noeuds_non_traites != []):
         #Récupération du premier noeud Pk dans Q
-        Pk = arbre.indice_noeuds_non_traites.pop()
+        if(explo!=Exploration.best_first_method):
+            Pk = arbre.indice_noeuds_non_traites.pop()
+        else:
+            Pk = heappop(arbre.indice_noeuds_non_traites)
+            if(k!=1):
+                zD=Pk[0]
+                isOptimal=Pk[1]
+                solution=Pk[2]
+                Pk=Pk[3]
         #Ou alors .drop() pour retier au début : NON
         arbre.nombre_noeuds_non_traites-=1
         
         #Calcul de la borne dual de Pk
-        zD, isOptimal, solution  = borne_duale(arbre.noeuds[Pk],instance)
+        if(explo!=Exploration.best_first_method or k==1):
+            zD, isOptimal, solution  = borne_duale(arbre.noeuds[Pk],instance)
+        #isOptimal == pos du noeud
+        #Zd c'est le premier element de heapop
           
         #Disjonction des cas:
         if(zD > arbre.primal_bound):
@@ -76,7 +94,10 @@ def branch_and_bound(instance,primale,borne_duale,Branchement,explo):
         else:
             #Sinon branchement et ajout des noeuds fils à l'arbre (en fonction de la méthode d'exploration):
             list_nodes=Branchement(arbre,arbre.noeuds[Pk],instance)
-            explo(arbre,list_nodes)
+            if(explo!=Exploration.best_first_method):
+                explo(arbre,list_nodes)
+            else:
+                Exploration.best_first_method(arbre,list_nodes,borne_duale,instance)
         k+=1
     return arbre.primal_bound, Current_best_solution, k
 
@@ -216,6 +237,15 @@ if __name__ == "__main__":
     print("Temps exécution B&B: ",t2_bb2-t1_bb2,"s")
     print("Nombre d'itérations: ",k2)
     
+    #Méthode 1 avec meilleur d'abord:
+    t1_bb5 = time.time()
+    z5,x5,k5 = branch_and_bound(probleme1,primale1,borne_duale1,Branchement1,Exploration.best_first_method)
+    t2_bb5 = time.time()
+    
+    print("\n\nSOLUTION OBTENUE B&B METHODE 1 (Meilleur d'abord) : \n\nz = ",z5,", x = ",x5)
+    print("Temps exécution B&B: ",t2_bb5-t1_bb5,"s")
+    print("Nombre d'itérations: ",k5)
+    
     #Méthode 2 avec un parcours en profondeur (DFS):
     t1_bb3 = time.time()
     z3,x3,k3 = branch_and_bound(probleme1,primale1,borne_duale2,Branchement2,Exploration.depth_first_method)
@@ -233,3 +263,14 @@ if __name__ == "__main__":
     print("\n\nSOLUTION OBTENUE B&B METHODE 2 (BFS) : \n\nz = ",z4,", x = ",x4)
     print("Temps exécution B&B: ",t2_bb4-t1_bb4,"s")
     print("Nombre d'itérations: ",k4)
+    
+    #Méthode 2 avec meilleur d'abord:
+    t1_bb6 = time.time()
+    z6,x6,k6 = branch_and_bound(probleme1,primale1,borne_duale2,Branchement2,Exploration.best_first_method)
+    t2_bb6 = time.time()
+    
+    print("\n\nSOLUTION OBTENUE B&B METHODE 2 (Meilleur d'abord) : \n\nz = ",z6,", x = ",x6)
+    print("Temps exécution B&B: ",t2_bb6-t1_bb6,"s")
+    print("Nombre d'itérations: ",k6)
+    
+    
