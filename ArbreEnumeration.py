@@ -14,23 +14,7 @@ class ArbreEnumeration:
             self.indice_noeuds_non_traites= [0]
             self.dual_bound=d1
             self.primal_bound=p1
-    
-    def breadth_first_method(self,descript1,descript2,indice,position):
-        self.nombre_noeuds+=2
-        self.nombre_noeuds_non_traites+=2 #a voir si 1 ou 2
-        self.noeuds += [Noeud(descript1,position,indice),Noeud(descript2,position,indice)]
-        self.indice_noeuds_non_traites += [self.nombre_noeuds-2,self.nombre_noeuds-1]
-        
-    def depth_first_method(self,descript1,descript2,indice,position):
-        self.nombre_noeuds+=2
-        self.nombre_noeuds_non_traites+=2 #a voir si 1 ou 2
-        self.noeuds += [Noeud(descript1,position,indice),Noeud(descript2,position,indice)]
-        self.indice_noeuds_non_traites = [self.nombre_noeuds-2,self.nombre_noeuds-1] + self.indice_noeuds_non_traites
-        
-    def best_first_method(self,descript1,descript2,indice,position):
-        
-        return 0 ##on peut utiliser ici tas min binaire pour aller plus vite
-
+            
 class Noeud:
     
     def __init__(self,description,pos,info =[],indice=-1):
@@ -39,8 +23,28 @@ class Noeud:
         self.indice_pere = indice #-1 si noeud racine
         self.info = info
     
+class Exploration:
+    
+    def depth_first_method(arbre,list_nodes): 
+        n=len(list_nodes)
+        arbre.nombre_noeuds+=n
+        arbre.nombre_noeuds_non_traites+=n
+        arbre.noeuds+= list_nodes
+        arbre.indice_noeuds_non_traites+= [i for i in range(arbre.nombre_noeuds-n,arbre.nombre_noeuds)]
+        
+    def breadth_first_method(arbre,list_nodes):
+        n=len(list_nodes)
+        arbre.nombre_noeuds+=n
+        arbre.nombre_noeuds_non_traites+=n
+        arbre.noeuds += list_nodes
+        arbre.indice_noeuds_non_traites = [i for i in range(arbre.nombre_noeuds-n,arbre.nombre_noeuds)] + arbre.indice_noeuds_non_traites
+        
+    def best_first_method(descript1,descript2,indice,position):
+        
+        return 0 ##on peut utiliser ici tas min binaire pour aller plus vite
+
 #Algorithme générique du branch-and-bound:
-def branch_and_bound(instance,primale,borne_duale,Branchement):
+def branch_and_bound(instance,primale,borne_duale,Branchement,explo):
     #Calcul de la borne primale initiale:
     p = primale(instance)
     #Création de l'arrbre d'énumération (pas de borne duale ???):
@@ -71,7 +75,8 @@ def branch_and_bound(instance,primale,borne_duale,Branchement):
             arbre.primal_bound = min(arbre.primal_bound,zD)
         else:
             #Sinon branchement et ajout des noeuds fils à l'arbre (en fonction de la méthode d'exploration):
-            Branchement(arbre,arbre.noeuds[Pk],instance)
+            list_nodes=Branchement(arbre,arbre.noeuds[Pk],instance)
+            explo(arbre,list_nodes)
         k+=1
     return arbre.primal_bound, Current_best_solution, k
 
@@ -128,35 +133,37 @@ def borne_duale2(node,instance):
     return borne, node.position,solution
         
 #Pour la règle de branchement, au niveau k, on crée un noeud pour chaque pièce non usinée et on l'usine en k-ème position
-#Méthode d'exploration : parcours en profondeur (on ajoute les nouveaux noeuds au début de la pile)
-def Branchement1_DFS(arbre,noeud,instance):
+def Branchement1(arbre,noeud,instance):
+    new_node=[]
     pieces_non_usinees = [i for i in range(instance.nb_piece) if i not in noeud.info]
     if(len(pieces_non_usinees) == 2):
         position = True
     else:
         position = False
     for i in pieces_non_usinees:
-        arbre.nombre_noeuds += 1
+        #arbre.nombre_noeuds += 1
         new_info = noeud.info.copy()
         new_info.append(i)
         des = "P"
         for piece in noeud.info:
             des += str(piece)
         des += str(i)
-        arbre.noeuds.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
-        arbre.nombre_noeuds_non_traites+=1
-        arbre.indice_noeuds_non_traites.append(arbre.nombre_noeuds-1)
+        #arbre.noeuds.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
+        #arbre.nombre_noeuds_non_traites+=1
+        #arbre.indice_noeuds_non_traites.append(arbre.nombre_noeuds-1)
+        new_node.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
+    return new_node
         
 #Pour la règle de branchement, au niveau k de l'arbre, on crée un noeud pour chaque pièce non traitée et on la fixe à la (n-k+1)-ème position
-#Méthode d'exploration : parcours en profondeur (on ajoute les nouveaux noeuds au début de la pile)
-def Branchement2_DFS(arbre,noeud,instance):
+def Branchement2(arbre,noeud,instance):
+    new_node=[]
     pieces_non_usinees = [i for i in range(instance.nb_piece) if i not in noeud.info]
     if(len(pieces_non_usinees) == 2):
         position = True
     else:
         position = False
     for i in pieces_non_usinees:
-        arbre.nombre_noeuds += 1
+        #arbre.nombre_noeuds += 1
         new_info = noeud.info.copy()
         new_info.insert(0,i)
         des = "P"
@@ -165,51 +172,11 @@ def Branchement2_DFS(arbre,noeud,instance):
         for piece in noeud.info:
             des += str(piece)
         des += str(i)
-        arbre.noeuds.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
-        arbre.nombre_noeuds_non_traites+=1
-        arbre.indice_noeuds_non_traites.append(arbre.nombre_noeuds-1)
-
-#Pour la règle de branchement, au niveau k, on crée un noeud pour chaque pièce non usinée et on l'usine en k-ème position
-#Méthode d'exploration : parcours en largeur(on ajoute les nouveaux noeuds au début de la file)
-def Branchement1_BFS(arbre,noeud,instance):
-    pieces_non_usinees = [i for i in range(instance.nb_piece) if i not in noeud.info]
-    if(len(pieces_non_usinees) == 2):
-        position = True
-    else:
-        position = False
-    for i in pieces_non_usinees:
-        arbre.nombre_noeuds += 1
-        new_info = noeud.info.copy()
-        new_info.append(i)
-        des = "P"
-        for piece in noeud.info:
-            des += str(piece)
-        des += str(i)
-        arbre.noeuds.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
-        arbre.nombre_noeuds_non_traites+=1
-        arbre.indice_noeuds_non_traites.insert(0,arbre.nombre_noeuds-1)
- 
-#Pour la règle de branchement, au niveau k de l'arbre, on crée un noeud pour chaque pièce non traitée et on la fixe à la (n-k+1)-ème position
-#Méthode d'exploration : parcours en largeur (on ajoute les nouveaux noeuds au début de la file)       
-def Branchement2_BFS(arbre,noeud,instance):
-    pieces_non_usinees = [i for i in range(instance.nb_piece) if i not in noeud.info]
-    if(len(pieces_non_usinees) == 2):
-        position = True
-    else:
-        position = False
-    for i in pieces_non_usinees:
-        arbre.nombre_noeuds += 1
-        new_info = noeud.info.copy()
-        new_info.insert(0,i)
-        des = "P"
-        for piece in pieces_non_usinees:
-            des += "."
-        for piece in noeud.info:
-            des += str(piece)
-        des += str(i)
-        arbre.noeuds.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
-        arbre.nombre_noeuds_non_traites+=1
-        arbre.indice_noeuds_non_traites.insert(0,arbre.nombre_noeuds-1)
+        new_node.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
+        #arbre.noeuds.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
+        #arbre.nombre_noeuds_non_traites+=1
+        #arbre.indice_noeuds_non_traites.append(arbre.nombre_noeuds-1)
+    return new_node
                 
     
 if __name__ == "__main__":
@@ -233,7 +200,7 @@ if __name__ == "__main__":
     
     #Méthode 1 avec un parcours en profondeur (DFS):
     t1_bb1 = time.time()
-    z1,x1,k1 = branch_and_bound(probleme1,primale1,borne_duale1,Branchement1_DFS)
+    z1,x1,k1 = branch_and_bound(probleme1,primale1,borne_duale1,Branchement1,Exploration.depth_first_method)
     t2_bb1 = time.time()
     
     print("\n\nSOLUTION OBTENUE B&B METHODE 1 (DFS) : \n\nz = ",z1,", x = ",x1)
@@ -242,7 +209,7 @@ if __name__ == "__main__":
     
     #Méthode 1 avec un parcours en largeur (BFS):
     t1_bb2 = time.time()
-    z2,x2,k2 = branch_and_bound(probleme1,primale1,borne_duale1,Branchement1_BFS)
+    z2,x2,k2 = branch_and_bound(probleme1,primale1,borne_duale1,Branchement1,Exploration.breadth_first_method)
     t2_bb2 = time.time()
     
     print("\n\nSOLUTION OBTENUE B&B METHODE 1 (BFS) : \n\nz = ",z2,", x = ",x2)
@@ -251,7 +218,7 @@ if __name__ == "__main__":
     
     #Méthode 2 avec un parcours en profondeur (DFS):
     t1_bb3 = time.time()
-    z3,x3,k3 = branch_and_bound(probleme1,primale1,borne_duale2,Branchement2_DFS)
+    z3,x3,k3 = branch_and_bound(probleme1,primale1,borne_duale2,Branchement2,Exploration.depth_first_method)
     t2_bb3 = time.time()
     
     print("\n\nSOLUTION OBTENUE B&B METHODE 2 (DFS) : \n\nz = ",z3,", x = ",x3)
@@ -260,7 +227,7 @@ if __name__ == "__main__":
     
     #Méthode 2 avec un parcours en largeur (BFS):
     t1_bb4 = time.time()
-    z4,x4,k4 = branch_and_bound(probleme1,primale1,borne_duale2,Branchement2_BFS)
+    z4,x4,k4 = branch_and_bound(probleme1,primale1,borne_duale2,Branchement2,Exploration.breadth_first_method)
     t2_bb4 = time.time()
     
     print("\n\nSOLUTION OBTENUE B&B METHODE 2 (BFS) : \n\nz = ",z4,", x = ",x4)
