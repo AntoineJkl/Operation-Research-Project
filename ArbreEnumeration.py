@@ -51,6 +51,7 @@ def branch_and_bound(instance,primale,borne_duale,Branchement):
     while(arbre.indice_noeuds_non_traites != []):
         #Récupération du premier noeud Pk dans Q
         Pk = arbre.indice_noeuds_non_traites.pop()
+        #Ou alors .drop() pour retier au début : NON
         arbre.nombre_noeuds_non_traites-=1
         
         #Calcul de la borne dual de Pk
