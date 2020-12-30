@@ -2,13 +2,14 @@
 Projet de RO (à rendre pour le 19 Janvier 2021)
 
 TO DO:
-- modifier regle de branchement pour qu'elle renvoie liste de noeud 
-- recréer les méthodes BFS et DFS avec liste de noeud en paramètres crée suite à la règle de branchement.
+-création notebook
+-supprimer classe exploration remplacer par méthode exploration
+-traiter extension avec réalisibilité 
+-créer une fonction qui modifie l'instance ( antoine ) 
+-tester la réalisabilité lors de la création de noeud ( antoine ) 
+-regarder affichage arbre ( victor )
 
--modification de B&B (string en paramètre) 
--créer une méthode pour meilleur d'abord 
-
--changement méthode d'exploration
+si le temps, plusieurs machines ...
 
 
 
