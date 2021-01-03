@@ -10,12 +10,34 @@ class Ordonnancement:
         self.unite_temps=[] #Unités de temps nécessaires pour les pièces
         self.deadlines=[] #Deadlines pour chaque pièce
         self.penalites=[] #Pénalités pour les retards de chaque pièce
+        self.contraintesPrecedence = {} #Contraintes de précédence entre les pièces
         
     def ajouterPieces(self,liste_ut,liste_d,liste_p):
         self.nb_piece += len(liste_ut)
         self.unite_temps += liste_ut
         self.deadlines += liste_d
         self.penalites += liste_p
+    
+    def ajouterContraintePrecedence(self,piece,pieces_precedentes):
+        if(piece >= self.nb_piece):
+            print("Attention ! La pièce",piece,"n'a pas encore été ajoutée")
+        else:
+            if piece not in self.contraintesPrecedence:
+                self.contraintesPrecedence[piece] = pieces_precedentes
+            else:
+                for p in pieces_precedentes:
+                    self.contraintesPrecedence[piece].append(p)
+    
+    def coutSolution(self,ordre):
+        if(len(ordre) == self.nb_piece) and (all(i in list(range(self.nb_piece)) for i in ordre)):
+            date_fin = 0
+            cout = 0
+            for piece in ordre:
+                date_fin += self.unite_temps[piece]
+                cout += max(0,date_fin - self.deadlines[piece])*self.penalites[piece]
+            return(cout)
+        else:
+            print("Erreur")
     
     def afficherProbleme(self):
         print("\nAFFICHAGE DU PROBLEME:\n")
@@ -40,6 +62,7 @@ class Ordonnancement:
         #Objectif:
         modele += pulp.lpSum([self.penalites[j]*r[j] for j in J]) #Minimisation des pénalités de retard
         #Contraintes:
+        
         for j in J:
             modele += r[j] >= f[j] - self.deadlines[j] #Calcul du retard
         
@@ -58,6 +81,11 @@ class Ordonnancement:
                 for k in J:
                     if(i<j and i<k and j != k):
                         modele += x[i][k] >= x[i][j] + x[j][k]- 1 #Impose la transitivité sur la relation d'ordre
+        
+        for j in self.contraintesPrecedence:
+            for i in self.contraintesPrecedence[j]:
+                modele += x[i][j] == 1 #Impose les contraintes de précédence
+                
         print("\nRESOLUTION DU PROBLEME:\n")
         #Résolution du problème:
         print("Solve with CBC")
