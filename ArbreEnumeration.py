@@ -94,7 +94,7 @@ def branch_and_bound(instance,primale,borne_duale,Branchement,explo):
             arbre.primal_bound = min(arbre.primal_bound,zD)
         else:
             #Sinon branchement et ajout des noeuds fils à l'arbre (en fonction de la méthode d'exploration):
-            list_nodes=Branchement(arbre,arbre.noeuds[Pk],instance)
+            list_nodes=Branchement(arbre,instance,Pk)
             if(explo!=best_first_method):
                 explo(arbre,list_nodes)
             else:
@@ -163,7 +163,8 @@ def borne_duale2(node,instance):
     return borne, node.position,solution
         
 #Pour la règle de branchement, au niveau k, on crée un noeud pour chaque pièce non usinée et on l'usine en k-ème position
-def Branchement1(arbre,noeud,instance):
+def Branchement1(arbre,instance,indice_pere):
+    noeud=arbre.noeuds[indice_pere]
     new_node=[]
     pieces_non_usinees = [i for i in range(instance.nb_piece) if i not in noeud.info]
     if(len(pieces_non_usinees) == 2):
@@ -184,11 +185,12 @@ def Branchement1(arbre,noeud,instance):
         #arbre.noeuds.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
         #arbre.nombre_noeuds_non_traites+=1
         #arbre.indice_noeuds_non_traites.append(arbre.nombre_noeuds-1)
-        new_node.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
+        new_node.append(Noeud(des,position,new_info,indice_pere))
     return new_node
         
 #Pour la règle de branchement, au niveau k de l'arbre, on crée un noeud pour chaque pièce non traitée et on la fixe à la (n-k+1)-ème position
-def Branchement2(arbre,noeud,instance):
+def Branchement2(arbre,instance,indice_pere):
+    noeud=arbre.noeuds[indice_pere]
     new_node=[]
     pieces_non_usinees = [i for i in range(instance.nb_piece) if i not in noeud.info]
     if(len(pieces_non_usinees) == 2):
@@ -213,7 +215,7 @@ def Branchement2(arbre,noeud,instance):
         for piece in noeud.info:
             des += str(piece)
         des += str(i)
-        new_node.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
+        new_node.append(Noeud(des,position,new_info,indice_pere))
         #arbre.noeuds.append(Noeud(des,position,new_info,arbre.nombre_noeuds-1))
         #arbre.nombre_noeuds_non_traites+=1
         #arbre.indice_noeuds_non_traites.append(arbre.nombre_noeuds-1)
