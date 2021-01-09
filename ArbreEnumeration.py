@@ -137,7 +137,7 @@ def branch_and_bound(instance,primale,borne_duale,Branchement,explo):
                     arbre.first_update_primal = True
                     if(explo == mixed_method):
                         arbre.indice_noeuds_non_traites.sort()
-            arbre.primal_bound = min(arbre.primal_bound,zD)
+                arbre.primal_bound = zD
         else:
             #Sinon branchement et ajout des noeuds fils à l'arbre (en fonction de la méthode d'exploration):
             list_nodes=Branchement(arbre,instance,Pk)
