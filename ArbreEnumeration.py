@@ -5,6 +5,8 @@
 import Ordonnancement as order
 import time
 from heapq import *
+import numpy as np
+import matplotlib.pyplot as plt
 
 class ArbreEnumeration:
     
@@ -13,6 +15,7 @@ class ArbreEnumeration:
             self.nombre_noeuds_non_traites = 1
             self.noeuds = [Noeud("Problème initiale",False)]
             self.indice_noeuds_non_traites= [0]
+            self.first_update_primal = False
             self.dual_bound=d1
             self.primal_bound=p1
             
@@ -48,70 +51,128 @@ def best_first_method(arbre,list_nodes,borne_duale,instance):
     for i in range(arbre.nombre_noeuds-n,arbre.nombre_noeuds):
         zD, isOptimal, solution  = borne_duale(arbre.noeuds[i],instance)
         heappush(arbre.indice_noeuds_non_traites,(zD,isOptimal,solution,i))
-        
 
-#Algorithme générique du branch-and-bound:
-def branch_and_bound(instance,primale,borne_duale,Branchement,explo):
-    #Calcul de la borne primale initiale:
-    p = primale(instance)
-    #Création de l'arrbre d'énumération (pas de borne duale ???):
-    arbre=ArbreEnumeration(0,p) 
-    #Initialisation de la meilleure solution courante:
-    Current_best_solution = []
-    k = 1
-    while(arbre.indice_noeuds_non_traites != []):
-        #Récupération du premier noeud Pk dans Q
-        if(explo!=best_first_method):
-            Pk = arbre.indice_noeuds_non_traites.pop()
-        else:
+def mixed_method(arbre,list_nodes,borne_duale,instance):
+    if(not arbre.first_update_primal):
+        n=len(list_nodes)
+        arbre.nombre_noeuds+=n
+        arbre.nombre_noeuds_non_traites+=n
+        arbre.noeuds += list_nodes
+        for i in range(arbre.nombre_noeuds-n,arbre.nombre_noeuds):
+            zD, isOptimal, solution  = borne_duale(arbre.noeuds[i],instance)
+            arbre.indice_noeuds_non_traites.append((zD,isOptimal,solution,i))
+    else:
+        n=len(list_nodes)
+        arbre.nombre_noeuds+=n
+        arbre.nombre_noeuds_non_traites+=n
+        arbre.noeuds += list_nodes
+        for i in range(arbre.nombre_noeuds-n,arbre.nombre_noeuds):
+            zD, isOptimal, solution  = borne_duale(arbre.noeuds[i],instance)
+            heappush(arbre.indice_noeuds_non_traites,(zD,isOptimal,solution,i))
+            
+def recuperationNoeud(arbre,explo,k,borne_duale,instance):
+    if(explo == best_first_method):
             Pk = heappop(arbre.indice_noeuds_non_traites)
             if(k!=1):
                 zD=Pk[0]
                 isOptimal=Pk[1]
                 solution=Pk[2]
                 Pk=Pk[3]
-        #Ou alors .drop() pour retier au début : NON
-        arbre.nombre_noeuds_non_traites-=1
+    elif(explo == mixed_method):
+        if(arbre.first_update_primal):
+            Pk = heappop(arbre.indice_noeuds_non_traites)
+            if(k!=1):
+                zD=Pk[0]
+                isOptimal=Pk[1]
+                solution=Pk[2]
+                Pk=Pk[3]
+        else:
+          Pk = arbre.indice_noeuds_non_traites.pop() 
+          if(k!=1):
+                zD=Pk[0]
+                isOptimal=Pk[1]
+                solution=Pk[2]
+                Pk=Pk[3]
+    else:
+        Pk = arbre.indice_noeuds_non_traites.pop()
+
+    #Ou alors .drop() pour retier au début : NON
+    arbre.nombre_noeuds_non_traites-=1
+    
+    #Calcul de la borne dual de Pk
+    if(explo not in [best_first_method,mixed_method] or k==1):
+        zD, isOptimal, solution  = borne_duale(arbre.noeuds[Pk],instance)
+    #isOptimal == pos du noeud
+    #Zd c'est le premier element de heapop
+    return Pk, zD, isOptimal, solution
+            
+def exploration(explo,arbre,list_nodes,borne_duale,instance):
+    if(explo not in [best_first_method,mixed_method]):
+        explo(arbre,list_nodes)
+    else:
+        explo(arbre,list_nodes,borne_duale,instance)
         
-        #Calcul de la borne dual de Pk
-        if(explo!=best_first_method or k==1):
-            zD, isOptimal, solution  = borne_duale(arbre.noeuds[Pk],instance)
-        #isOptimal == pos du noeud
-        #Zd c'est le premier element de heapop
-          
+#Algorithme générique du branch-and-bound:
+def branch_and_bound(instance,primale,borne_duale,Branchement,explo):
+    #Calcul de la borne primale initiale et itialisation de la meilleure solution courante:
+    p, Current_best_solution = primale(instance)
+    #Création de l'arrbre d'énumération:
+    arbre=ArbreEnumeration(0,p) 
+    #Variable comptant le nombre d'itérations
+    k = 1
+    #Boucle principale
+    while(arbre.indice_noeuds_non_traites != []):
+        #Récupération du premier noeud Pk dans Q et de la borne duale du problème associé
+        Pk, zD, isOptimal, solution = recuperationNoeud(arbre,explo,k,borne_duale,instance)
         #Disjonction des cas:
-        if(zD > arbre.primal_bound):
+        if(zD >= arbre.primal_bound):
             #Si zD est plus grand que la borne primale courante, on élague (uniquement pour un problème de minimisation)
-            #print("Elagage")
             pass
         elif(isOptimal):
             #Si zD est optimale pour Pk, on met à jour la borne primale:
             if zD < arbre.primal_bound:
                 #On met à jour la meilleure solution courante:
-                #print("Solution optimale - Update borne primale")
                 Current_best_solution = solution
-                arbre.primal_bound_first_update = True
+                if(not arbre.first_update_primal):
+                    arbre.first_update_primal = True
+                    if(explo == mixed_method):
+                        arbre.indice_noeuds_non_traites.sort()
             arbre.primal_bound = min(arbre.primal_bound,zD)
         else:
             #Sinon branchement et ajout des noeuds fils à l'arbre (en fonction de la méthode d'exploration):
             list_nodes=Branchement(arbre,instance,Pk)
-            if(explo!=best_first_method):
-                explo(arbre,list_nodes)
-            else:
-                best_first_method(arbre,list_nodes,borne_duale,instance)
+            exploration(explo,arbre,list_nodes,borne_duale,instance)
         k+=1
     return arbre.primal_bound, Current_best_solution, k
 
 #Pour trouver une borne primale, on prend la solution constituée des pièces les unes à la suite des autres
 def primale1(instance):
     borne = 0
+    solution = []
     for i in range(instance.nb_piece):
         date_fin = 0
         for j in range(i+1):
             date_fin += instance.unite_temps[j]
         if(date_fin >= instance.deadlines[i]):
             borne += max(0,date_fin - instance.deadlines[i])*instance.penalites[i]
-    return(borne)
+        solution.append(i)
+    return(borne,solution)
+
+#Pour trouver une borne primale, on peut mettre successivement à la dernière position disponible l'élément non traité donnant lieu à la plus petite pénalité de retard
+def primale3(instance):
+    borne = 0
+    piece_non_ajoute = list(range(instance.nb_piece))
+    solution = []
+    date_fin = sum(instance.unite_temps)
+    while(len(piece_non_ajoute) != 0):
+        pire_cas = [ max(0,(date_fin - instance.deadlines[i]))*instance.penalites[i] for i in piece_non_ajoute ]
+        index = np.argmin(pire_cas)
+        borne += min(pire_cas)
+        prochaine_piece = piece_non_ajoute.pop(index)
+        #print("min : ", min(pire_cas),"arg: ",prochaine_piece)
+        date_fin -= instance.unite_temps[prochaine_piece]
+        solution.insert(0,prochaine_piece)
+    return(borne,solution)
 
 #Pour trouver une borne primale (en particulier lorsque l'on impose des contraintes de précédence), on considère que chaque pièce engendre le maximum de pénalité possible
 def primale2(instance):
@@ -119,7 +180,7 @@ def primale2(instance):
     date_fin = sum(instance.unite_temps)
     for i in range(instance.nb_piece):
         borne += max(0,date_fin - instance.deadlines[i])*instance.penalites[i]
-    return(borne)
+    return(borne,[])
 
 #Pour trouver une borne duale, si on a fixé l'ordre des k pièces, on calcule les pénalités de retard de ces k pièces et on ajoute la pénalité des autres pièces en supposant qu'elles passent en (k+1)-ème position
 def borne_duale1(node,instance):
@@ -307,9 +368,9 @@ if __name__ == "__main__":
     print("\n\n ---- PROBLEME UTILISANT DES CONTRAINTES DE PRECEDENCE ----")
     
     probleme2 = order.Ordonnancement()
-    P = [4,5,3,5,6,7,9,1] #Pénalités
-    T = [12,8,15,9,13,15,7,10] #Unités de temps nécessaires
-    D = [16,26,25,27,23,12,26,17] #Deadlines
+    P = [4,5,3,5,6,7,9,1,2] #Pénalités
+    T = [12,8,15,9,13,15,7,10,9] #Unités de temps nécessaires
+    D = [16,26,25,27,23,12,26,17,23] #Deadlines
     probleme2.ajouterPieces(T,D,P)
     probleme2.ajouterContraintePrecedence(0,[2,1])
     probleme2.ajouterContraintePrecedence(1,[2,3])
