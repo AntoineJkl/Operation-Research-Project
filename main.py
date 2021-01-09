@@ -42,7 +42,7 @@ if __name__ == "__main__":
     
         #Méthode 2 avec meilleur d'abord:
     t1_bb7 = time.time()
-    z7,x7,k7 = ar.branch_and_bound(probleme2,ar.primale3,ar.borne_duale1,ar.Branchement1,ar.breadth_first_method)
+    z7,x7,k7 = ar.branch_and_bound(probleme2,ar.primale3,ar.borne_duale1,ar.Branchement1,ar.best_first_method)
     t2_bb7 = time.time()
     
     print("\n\nSOLUTION OBTENUE B&B METHODE 2 (Meilleur d'abord) : \n\nz = ",z7,", x = ",x7)
